@@ -3,6 +3,7 @@
 \usepackage[utf8]{inputenc}
 \usepackage[russian]{babel}
 \usepackage{graphicx, setspace}
+\usepackage{minted}
 
 \usepackage[
 top = 1.25cm, 
@@ -72,4 +73,233 @@ bottom = 2.0cm]{geometry}
     \item Hart stop
     \item System Shutdown
 \end{itemize}
+\pagebreak
+\section*{Выполнение}
+\subsection*{Функция putchar}
+\subsubsection*{Аргументы вызова}
+\begin{itemize}
+    \item \textbf{arg0}: символ для вывода (\texttt{ch})
+    \item \textbf{arg1-arg5}: \texttt{0} (\texttt{SBI\_NO\_ARG})
+    \item \textbf{fid}: \texttt{0} (\texttt{SBI\_FID\_DEFAULT})
+    \item \textbf{eid}: \texttt{0x01} (\texttt{SBI\_ECALL\_0\_1\_PUTCHAR})
+\end{itemize}
+\subsubsection*{Возвращаемое значение}
+Функция \texttt{put\_char} возвращает \texttt{0} при успешной отправке символа.
+Если в \texttt{sbiret.error} получена ошибка, возвращается \texttt{sbiret.value}.
+\subsubsection*{Код функции}
+\begin{minted}[fontsize=\small, frame=lines, linenos]{c}
+int put_char(char ch) {
+  struct sbiret result =
+      sbi_call(ch, SBI_NO_ARG, SBI_NO_ARG, SBI_NO_ARG, SBI_NO_ARG, SBI_NO_ARG,
+               SBI_FID_DEFAULT, SBI_ECALL_0_1_PUTCHAR);
+  if (result.error) {
+    return result.value;
+  }
+  return 0;
+}
+\end{minted}
+
+\subsection*{Функция getchar}
+\subsubsection*{Аргументы вызова}
+\begin{itemize}
+    \item \textbf{arg0-arg5}: \texttt{0} (\texttt{SBI\_NO\_ARG})
+    \item \textbf{fid}: \texttt{0} (\texttt{SBI\_FID\_DEFAULT})
+    \item \textbf{eid}: \texttt{0x02} (\texttt{SBI\_ECALL\_0\_1\_GETCHAR})
+\end{itemize}
+\subsubsection*{Возвращаемое значение}
+Функция опрашивает OpenSBI до тех пор, пока не будет получен символ
+(\texttt{SBI\_ERR\_FAILED} означает, что данных пока нет), после чего
+возвращает считанный символ.
+\subsubsection*{Код функции}
+\begin{minted}[fontsize=\small, frame=lines, linenos]{c}
+char get_char() {
+  struct sbiret result;
+  do {
+    result =
+        sbi_call(SBI_NO_ARG, SBI_NO_ARG, SBI_NO_ARG, SBI_NO_ARG, SBI_NO_ARG,
+                 SBI_NO_ARG, SBI_FID_DEFAULT, SBI_ECALL_0_1_GETCHAR);
+  } while (result.error == SBI_ERR_FAILED);
+
+  return result.error;
+}
+\end{minted}
+
+\subsection*{Получение информации о версии спецификации SBI}
+\subsubsection*{Параметры и возвращаемое значение}
+Передаваемые аргументы:
+\begin{itemize}
+    \item \textbf{arg0-arg5}: \texttt{0}
+    \item \textbf{fid}: \texttt{0} (\texttt{SBI\_BASE\_GET\_SPEC\_VERSION})
+    \item \textbf{eid}: \texttt{SBI\_EXT\_BASE}
+\end{itemize}
+Функция возвращает структуру \texttt{sbi\_spec\_version\_t}:
+\texttt{status}, исходное значение \texttt{raw} и декодированные
+\texttt{major}/\texttt{minor}.
+\subsubsection*{Код функции}
+\begin{minted}[fontsize=\small, frame=lines, linenos]{c}
+sbi_spec_version_t get_specification_version(void) {
+  struct sbiret result =
+      sbi_call(0, 0, 0, 0, 0, 0, SBI_BASE_GET_SPEC_VERSION, SBI_EXT_BASE);
+
+  sbi_spec_version_t version = {
+      .status = to_status(result.error), .raw = 0, .major = 0, .minor = 0};
+
+  if (version.status == SBI_STATUS_SUCCESS) {
+    version.raw = (unsigned long)result.value;
+    version.major = (version.raw >> 24) & 0x7FUL;
+    version.minor = version.raw & 0xFFFFFFUL;
+  }
+
+  return version;
+}
+\end{minted}
+
+\subsection*{Получение информации о количестве счётчиков}
+\subsubsection*{Параметры и возвращаемое значение}
+Передаваемые аргументы:
+\begin{itemize}
+    \item \textbf{arg0-arg5}: \texttt{0}
+    \item \textbf{fid}: \texttt{SBI\_EXT\_CTR\_NUM}
+    \item \textbf{eid}: \texttt{SBI\_EXT\_PMU}
+\end{itemize}
+Возвращаемое значение:
+\begin{itemize}
+    \item неотрицательное целое --- количество счётчиков;
+    \item отрицательное значение --- код ошибки SBI.
+\end{itemize}
+\subsubsection*{Код функции}
+\begin{minted}[fontsize=\small, frame=lines, linenos]{c}
+int get_counters_number(void) {
+  struct sbiret result =
+      sbi_call(0, 0, 0, 0, 0, 0, SBI_EXT_CTR_NUM, SBI_EXT_PMU);
+  if (result.error != SBI_STATUS_SUCCESS) {
+    return (int)result.error;
+  }
+
+  return (int)result.value;
+}
+\end{minted}
+
+\subsection*{Получение информации о конкретном счётчике}
+\subsubsection*{Параметры и возвращаемое значение}
+Передаваемые аргументы:
+\begin{itemize}
+    \item \textbf{arg0}: индекс счётчика (\texttt{index})
+    \item \textbf{arg1-arg5}: \texttt{0}
+    \item \textbf{fid}: \texttt{SBI\_EXT\_CTR\_DTLS}
+    \item \textbf{eid}: \texttt{SBI\_EXT\_PMU}
+\end{itemize}
+Возвращается
+\texttt{sbi\_value\_t}: \texttt{status} и \texttt{value} (исходный битовый набор
+с характеристиками счётчика).
+\subsubsection*{Код функции}
+\begin{minted}[fontsize=\small, frame=lines, linenos]{c}
+sbi_value_t get_counter_details(int index) {
+  struct sbiret result =
+      sbi_call((long)index, 0, 0, 0, 0, 0, SBI_EXT_CTR_DTLS, SBI_EXT_PMU);
+
+  sbi_value_t details = {.status = to_status(result.error), .value = 0};
+  if (details.status == SBI_STATUS_SUCCESS) {
+    details.value = (unsigned long)result.value;
+  }
+
+  return details;
+}
+\end{minted}
+
+\subsection*{Получение информации о версии реализации SBI}
+\subsubsection*{Параметры и возвращаемое значение}
+Передаваемые аргументы:
+\begin{itemize}
+    \item \textbf{arg0-arg5}: \texttt{0}
+    \item \textbf{fid}: \texttt{2} (\texttt{SBI\_BASE\_GET\_IMPL\_VERSION})
+    \item \textbf{eid}: \texttt{SBI\_EXT\_BASE}
+\end{itemize}
+Возвращается \texttt{sbi\_value\_t}
+со статусом и целочисленной версией реализации.
+\subsubsection*{Код функции}
+\begin{minted}[fontsize=\small, frame=lines, linenos]{c}
+sbi_value_t get_implementation_version(void) {
+  struct sbiret result =
+      sbi_call(0, 0, 0, 0, 0, 0, SBI_BASE_GET_IMPL_VERSION, SBI_EXT_BASE);
+
+  sbi_value_t version = {.status = to_status(result.error), .value = 0};
+  if (version.status == SBI_STATUS_SUCCESS) {
+    version.value = (unsigned long)result.value;
+  }
+
+  return version;
+}
+\end{minted}
+
+\subsection*{Получение информации об аппаратном потоке}
+\subsubsection*{Параметры и возвращаемое значение}
+Передаваемые аргументы:
+\begin{itemize}
+    \item \textbf{arg0}: идентификатор hart (\texttt{index})
+    \item \textbf{arg1-arg5}: \texttt{0}
+    \item \textbf{fid}: \texttt{2} (\texttt{SBI\_HSM\_HART\_GET\_STATUS})
+    \item \textbf{eid}: \texttt{SBI\_EXT\_HSM}
+\end{itemize}
+Возвращается \texttt{sbi\_hart\_status\_t}: код статуса и состояние hart.
+\subsubsection*{Код функции}
+\begin{minted}[fontsize=\small, frame=lines, linenos]{c}
+sbi_hart_status_t get_hart_status(int index) {
+  struct sbiret result = sbi_call((long)index, 0, 0, 0, 0, 0,
+                                  SBI_HSM_HART_GET_STATUS, SBI_EXT_HSM);
+
+  sbi_hart_status_t hart_status = {.status = to_status(result.error),
+                                   .state = SBI_HART_STATE_UNKNOWN};
+
+  if (hart_status.status == SBI_STATUS_SUCCESS) {
+    long state = result.value;
+    if (state >= SBI_HART_STATE_STARTED &&
+        state <= SBI_HART_STATE_RESUME_PENDING) {
+      hart_status.state = (sbi_hart_state_t)state;
+    }
+  }
+
+  return hart_status;
+}
+\end{minted}
+
+\subsection*{Остановка аппаратного потока}
+\subsubsection*{Параметры и возвращаемое значение}
+Передаваемые аргументы:
+\begin{itemize}
+    \item \textbf{arg0-arg5}: \texttt{0}
+    \item \textbf{fid}: \texttt{1} (\texttt{SBI\_HSM\_HART\_STOP})
+    \item \textbf{eid}: \texttt{SBI\_EXT\_HSM}
+\end{itemize}
+Возвращаемое значение --- \texttt{sbi\_status\_t}.
+\subsubsection*{Код функции}
+\begin{minted}[fontsize=\small, frame=lines, linenos]{c}
+sbi_status_t stop_hart(void) {
+  struct sbiret result =
+      sbi_call(0, 0, 0, 0, 0, 0, SBI_HSM_HART_STOP, SBI_EXT_HSM);
+  return to_status(result.error);
+}
+\end{minted}
+
+\subsection*{Выключение системы}
+\subsubsection*{Параметры и возвращаемое значение}
+Передаваемые аргументы:
+\begin{itemize}
+    \item \textbf{arg0}: \texttt{SBI\_SRST\_RESET\_TYPE\_SHUTDOWN}
+    \item \textbf{arg1}: \texttt{SBI\_SRST\_RESET\_REASON\_NONE}
+    \item \textbf{arg2-arg5}: \texttt{0}
+    \item \textbf{fid}: \texttt{SBI\_SRST\_SYSTEM\_RESET}
+    \item \textbf{eid}: \texttt{SBI\_EXT\_SRST}
+\end{itemize}
+Функция возвращает \texttt{sbi\_status\_t} (обычно управление не возвращается
+при успешном выключении).
+\subsubsection*{Код функции}
+\begin{minted}[fontsize=\small, frame=lines, linenos]{c}
+sbi_status_t shutdown(void) {
+  struct sbiret result =
+      sbi_call(SBI_SRST_RESET_TYPE_SHUTDOWN, SBI_SRST_RESET_REASON_NONE, 0, 0,
+               0, 0, SBI_SRST_SYSTEM_RESET, SBI_EXT_SRST);
+  return to_status(result.error);
+}
+\end{minted}
 \end{document}

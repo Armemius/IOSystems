@@ -17,6 +17,10 @@ void println(const char *buffer);
 // and prints it with formatting
 void printf(const char *fmt, ...);
 
+// Reads one line and parses it according to format
+// Supports: %d %i %u %x %X %c %s and %%
+int scanf(const char *fmt, ...);
+
 // Receives pointer to buffer and its size
 // and prints it
 void print_buffer(const char *buffer, int length);

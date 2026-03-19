@@ -1,6 +1,10 @@
+#include "io_utils.h"
+
 extern char __bss[], __bss_end[], __stack_top[];
 
 void kernel_main(void) {
+  printf("%d", 228);
+
   for (;;) {
     __asm__ __volatile__("wfi");
   }

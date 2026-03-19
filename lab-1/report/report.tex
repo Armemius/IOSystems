@@ -1,0 +1,75 @@
+\documentclass[12pt,a4paper]{report}
+\usepackage[T2A]{fontenc}
+\usepackage[utf8]{inputenc}
+\usepackage[russian]{babel}
+\usepackage{graphicx, setspace}
+
+\usepackage[
+top = 1.25cm, 
+bottom = 2.0cm]{geometry}
+
+\begin{document}
+\begin{titlepage} 
+	\centering
+    % HEADER
+	{
+        \scshape
+        Федеральное государственное автономное образовательное учреждение высшего образования
+        \par
+        \textbf{«Научно-образовательная корпорация ИТМО»}
+        \par
+        \vspace*{1cm}
+        Факультет Программной Инженерии и Компьютерной Техники
+        \par
+    }
+    % LOGO
+    \vspace*{0.6cm}
+    \includegraphics[width=\textwidth]{logo.png}
+    % LAB INFO
+    {
+        \Large
+        \textbf{Лабораторная работа по предмету \\ <<Системы ввода-вывода>>}
+        \par
+        \normalsize
+        \vspace*{0.75cm}
+        \textbf{Вариант 1/2}
+        \par
+    }
+    \vfill
+    % СREDITS
+    \hfill\begin{minipage}{\dimexpr\textwidth-7.8cm}
+        \textbf{Выполнил:}\par
+        Степанов Арсений Алексеевич\par
+        \vspace*{0.15cm}
+        \textbf{Группа:}\par
+        P3318 / СВВ 1.1\par
+        \vspace*{0.15cm}
+        \textbf{Преподаватель:}\par
+        Табунщик Сергей Михайлович\par
+    \end{minipage}
+    \vfill
+    Санкт-Петербург, \the\year{}г.
+\end{titlepage}  
+\section*{Цели работы}
+Ознакомление с принципами организации ввода/выводе без
+операционной системы на примере компьютерной системы на базе
+процессора с архитектурой RISC-V и интерфейсом OpenSBI с
+использованием эмулятора QEMU
+\begin{itemize}
+    \item Реализовать функцию putchar вывода данных в консоль
+    \item Реализовать функцию getchar для получения данных из консоли
+    \item На базе реализованных функций putchar и getchar написать программу, позволяющую вызывать определенные вариантом функции OpenSBI посредством взаимодействия пользователя через меню
+    \item Запустить программу и выполнить вызов пунктов меню, получив результаты их работы
+    \item Оформить отчет по работе в электронном формате
+\end{itemize}
+\section*{Необходимые вызовы функции OpenSBI}
+\begin{itemize}
+    \item Get SBI specification version
+    \item Get number of counters
+    \item Get details of a counter
+    \item Get SBI implementation version
+    \item Hart get status
+    \item Hart stop
+    \item System Shutdown
+\end{itemize}
+\end{document}

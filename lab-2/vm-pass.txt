@@ -1,0 +1,7 @@
+[INITIAL]
+login: ubuntu
+password: ubuntu
+
+[UPDATED]
+login: ubuntu
+password: N3w_P4$$w0rd

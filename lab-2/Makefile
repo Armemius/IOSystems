@@ -13,7 +13,7 @@ BUILD_DIR = build
 
 # TARGET = $(BUILD_DIR)/kernel.elf
 
-.PHONY: all run clean dirs install install-ubuntu connect compile-commands
+.PHONY: all run clean dirs install install-ubuntu connect compile-commands gen-ssh-keys
 
 run:
 	$(QEMU) \
@@ -39,8 +39,11 @@ install:
 		make \
 		bear
 
-connect:
+connect-manual:
 	ssh ubuntu@localhost -p 2222
+
+connect:
+	ssh -i ./.ssh/vm_key ubuntu@localhost -p 2222
 
 setup-ubuntu:
 	rm -f ./misc/ubuntu.img
@@ -49,3 +52,9 @@ setup-ubuntu:
 	rm -f ./misc/ubuntu.img.xz
 	qemu-img resize -f raw ./misc/ubuntu.img +5G
 	echo "Installation complete!"
+
+ssh-keygen:
+	rm -rf ./.ssh
+	mkdir -p ./.ssh
+	ssh-keygen -t ed25519 -N "" -f ./.ssh/vm_key
+	ssh-copy-id -i ./.ssh/vm_key -p 2222 ubuntu@localhost

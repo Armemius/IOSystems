@@ -58,3 +58,12 @@ ssh-keygen:
 	mkdir -p ./.ssh
 	ssh-keygen -t ed25519 -N "" -f ./.ssh/vm_key
 	ssh-copy-id -i ./.ssh/vm_key -p 2222 ubuntu@localhost
+
+install-remote:
+	ssh -p 2222 -i ./.ssh/vm_key ubuntu@localhost "sudo apt update -y && sudo apt upgrade -y"
+	ssh -p 2222 -i ./.ssh/vm_key ubuntu@localhost "sudo apt install -y build-essential dmesg"
+
+sync-sources:
+	ssh -p 2222 -i ./.ssh/vm_key ubuntu@localhost "rm -rf ~/lab-2"
+	ssh -p 2222 -i ./.ssh/vm_key ubuntu@localhost "mkdir -p ~/lab-2"
+	scp -r -P 2222 -i ./.ssh/vm_key ./remote/* ubuntu@localhost:~/lab-2/
